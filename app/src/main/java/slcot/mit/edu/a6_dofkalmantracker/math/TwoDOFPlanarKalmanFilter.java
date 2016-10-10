@@ -16,7 +16,7 @@ public class TwoDOFPlanarKalmanFilter extends KalmanFilter{
     }
 
     void init(Matrix initialConditions){
-        this.future_x_est = new Matrix(6, 1);         // 6 DOF - x,y,dotx,doty,ddotx,ddoty
+        this.future_x_est = new Matrix(6, 1);         // 2 DOF - x,y | 6 values (x,y,dotx,doty,ddotx,ddoty)
         this.x_prev = initialConditions;
 
         this.future_P_est = new Matrix(6, 6);
