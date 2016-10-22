@@ -9,8 +9,14 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="slcot.mit.edu.a6_dofkalmantracker.MainActivity">
 
-    <TextView
+    <ToggleButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:text="TOGGLE DATA RECORDING"
+        android:id="@+id/toggleButton"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:textOff="START RECORDING"
+        android:textOn="STOP RECORDING"
+        android:textSize="28dp" />
 </RelativeLayout>

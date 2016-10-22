@@ -11,7 +11,6 @@ import android.os.Binder;
 import android.os.IBinder;
 
 import Jama.Matrix;
-import slcot.mit.edu.a6_dofkalmantracker.log.LogSender;
 import slcot.mit.edu.a6_dofkalmantracker.log.MatrixCSVLogger;
 import slcot.mit.edu.a6_dofkalmantracker.math.TwoDOFPlanarKalmanFilter;
 
@@ -20,6 +19,8 @@ public class SensorSamplingService extends Service implements SensorEventListene
     // Enumeration types for sensor values that come in
     public static final int ACCELEROMETER_SENSOR_TYPE = 0;
     public static final int GYROSCOPE_SENSOR_TYPE = 1;
+
+    public static final double HIGH_PASS_THRESHOLD = 0.2;
 
     // Nanosecond to second conversion
     public static final float NS2S = 1.0f / 1000000000.0f;
@@ -30,7 +31,8 @@ public class SensorSamplingService extends Service implements SensorEventListene
     Sensor accel, gyro;
 
     TwoDOFPlanarKalmanFilter kalman;
-    Matrix measurement;
+    public Matrix measurement;
+    public double runningTime;
     long previousTimestamp;
 
     MatrixCSVLogger stateLog;
@@ -60,11 +62,14 @@ public class SensorSamplingService extends Service implements SensorEventListene
         sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_UI);
         sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_UI);
 
-        measurement = new Matrix(2, 1);
-        kalman = new TwoDOFPlanarKalmanFilter();
+        previousTimestamp = -1;
+        runningTime = 0;
 
-        stateLog = new MatrixCSVLogger("state_log.csv");
-        measurementLog = new MatrixCSVLogger("measurement_log.csv");
+        measurement = new Matrix(2, 1);
+        //kalman = new TwoDOFPlanarKalmanFilter();
+
+        //stateLog = new MatrixCSVLogger("state_log.csv");
+        //measurementLog = new MatrixCSVLogger("measurement_log.csv");
     }
 
     @Override
@@ -81,10 +86,6 @@ public class SensorSamplingService extends Service implements SensorEventListene
 
         previousTimestamp = -1;
         measurement = null;
-
-        // Send logs to server
-        LogSender.getInstance().send(measurementLog);
-        LogSender.getInstance().send(stateLog);
     }
 
     private int getSensorType(Sensor sensor){
@@ -102,6 +103,14 @@ public class SensorSamplingService extends Service implements SensorEventListene
         }
     }
 
+    private double highPassFilter(double input){
+        if(Math.abs(input) > HIGH_PASS_THRESHOLD){
+            return input;
+        } else {
+            return 0.0;
+        }
+    }
+
     @Override
     public void onSensorChanged(SensorEvent event) {
         switch(getSensorType(event.sensor)){
@@ -111,20 +120,23 @@ public class SensorSamplingService extends Service implements SensorEventListene
                     double dt = (double)(event.timestamp - previousTimestamp) * NS2S;
 
                     // Kalman time update
-                    kalman.timeUpdate(dt);
+                    //kalman.timeUpdate(dt);
 
                     // Set values and update Kalman filter
-                    measurement.set(0, 0, event.values[0]);
-                    measurement.set(1, 0, event.values[1]);
+                    measurement.set(0, 0, highPassFilter(event.values[0]));
+                    measurement.set(1, 0, highPassFilter(event.values[1]));
 
                     // Kalman measurement update
-                    kalman.measurementUpdate(measurement);
+                    //kalman.measurementUpdate(measurement);
 
                     // Log the values
-                    measurementLog.log(measurement, event.timestamp);
-                    stateLog.log(kalman.getState(), event.timestamp);
+                    //measurementLog.log(measurement, event.timestamp);
+                    //stateLog.log(kalman.getState(), event.timestamp);
 
                     // Update previous timestamp
+                    previousTimestamp = event.timestamp;
+                    runningTime += dt;
+                } else {
                     previousTimestamp = event.timestamp;
                 }
 
