@@ -9,6 +9,9 @@ import android.os.Bundle;
 import android.widget.CompoundButton;
 import android.widget.ToggleButton;
 
+import java.util.ArrayList;
+
+import Jama.Matrix;
 import slcot.mit.edu.a6_dofkalmantracker.socketio.TrackerServer;
 
 public class MainActivity extends AppCompatActivity {
@@ -30,11 +33,20 @@ public class MainActivity extends AppCompatActivity {
                         trackerServer = TrackerServer.getInstance();
                     }
 
-                    if(sensorSamplingService != null && sensorSamplingService.measurement != null){
+                    if(sensorSamplingService != null && sensorSamplingService.measurement != null && sensorSamplingService.kinematics != null && sensorSamplingService.kinematics.size() > 1){
                         // send data
-                        trackerServer.send("T:"+ String.format("%6.2f", sensorSamplingService.runningTime)
-                                        + ", X: " + String.format("%,6.4f", sensorSamplingService.measurement.get(0,0))
-                                        + ", Y: " + String.format("%,6.4f", sensorSamplingService.measurement.get(1,0)) );
+//                        trackerServer.send("T: "+ String.format("%6.2f", sensorSamplingService.runningTime)
+//                                        + ", X: " + String.format("%,6.4f", sensorSamplingService.measurement.get(0,0))
+//                                        + ", Y: " + String.format("%,6.4f", sensorSamplingService.measurement.get(1,0)) );
+                        String[] labels = { "X", "Y", "Vx", "Vy", "Ax", "Ay" };
+                        String output = "";
+                        Matrix values = sensorSamplingService.kinematics.get(0);
+                        output += "T: " + String.format("%6.2f", sensorSamplingService.runningTime);
+                        for (int i=0; i < values.getRowDimension(); i++){
+                            output += ", " + labels[i] + ": " + String.format("%,6.4f", values.get(i, 0));
+                        }
+
+                        trackerServer.send(output);
                     }
 
                     Thread.sleep(100);
